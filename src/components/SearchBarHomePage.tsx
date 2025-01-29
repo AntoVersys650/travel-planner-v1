@@ -18,7 +18,11 @@ const SearchBarHomePage = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', width: '1000px' }}>
+    <form onSubmit={handleSubmit} style={{ 
+      display: 'flex', 
+      width: '1000px',
+      position: 'relative' // Necessario per posizionare l'icona
+    }}>
       <input
         type="text"
         placeholder="Cerca..."
@@ -26,15 +30,19 @@ const SearchBarHomePage = () => {
         onChange={handleInputChange}
         style={{
           padding: '10px',
+          paddingRight: '50px', // Spazio per l'icona
           border: '3px solid #00008B',
           borderRadius: '10px',
           flexGrow: 1,
-          marginRight: '10px'
         }}
       />
       <button
         type="submit"
         style={{
+          position: 'absolute', // Posiziona l'icona
+          top: '50%',
+          right: '10px',
+          transform: 'translateY(-50%)',
           border: 'none',
           backgroundColor: 'transparent',
           padding: 0,
@@ -42,10 +50,10 @@ const SearchBarHomePage = () => {
         }}
       >
         <Image
-          src="/magnifying-glass-search-free-png.webp" // Assicurati che il percorso sia corretto
+          src="/magnifying-glass-search-free-png.webp"
           alt="Cerca"
-          width={60} // Immagine più grande (larghezza)
-          height={60} // Immagine più grande (altezza)
+          width={40} // Dimensione icona ridotta
+          height={40} // Dimensione icona ridotta
         />
       </button>
     </form>

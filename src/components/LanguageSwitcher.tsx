@@ -15,22 +15,36 @@ const LanguageSwitcher = () => {
     { code: 'fr', name: 'Francese', flag: '/FR Flag mini.png' },
   ];
 
+  const translations = {
+    it: { title: 'Lingua' },
+    en: { title: 'Language' },
+    es: { title: 'Idioma' },
+    fr: { title: 'Langue' },
+  };
+
   const handleLanguageChange = (language) => {
     setCurrentLanguage(language.code);
     setIsOpen(false);
-    console.log('Lingua selezionata:', language.code);
+
+    localStorage.setItem('language', language.code);
+
+    const event = new CustomEvent('languageChange', { detail: language.code });
+    window.dispatchEvent(event);
   };
 
   const toggleOpen = () => {
     setIsOpen(!isOpen);
-    console.log('Menu aperto:', isOpen); // Debug: Stato del menu
   };
 
   useEffect(() => {
+    const storedLanguage = localStorage.getItem('language');
+    if (storedLanguage) {
+      setCurrentLanguage(storedLanguage);
+    }
+
     const handleClickOutside = (event) => {
-      if (selectRef.current &&!selectRef.current.contains(event.target)) {
+      if (selectRef.current && !selectRef.current.contains(event.target)) {
         setIsOpen(false);
-        console.log('Cliccato fuori dal menu, menu chiuso'); // Debug: Click esterno
       }
     };
 
@@ -38,33 +52,80 @@ const LanguageSwitcher = () => {
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
-  },);
+  }, []);
 
   const selectedLanguage = languages.find(lang => lang.code === currentLanguage);
 
-  console.log('Lingua corrente:', currentLanguage); // Debug: Lingua corrente
-  console.log('Dati lingua selezionata:', selectedLanguage); // Debug: Dati lingua selezionata
-  console.log('Percorso immagine:', selectedLanguage?.flag); // Debug: Percorso immagine
-
   return (
-    <div className="language-switcher" ref={selectRef}>
-      <div className="selected-language" onClick={toggleOpen}>
-        <img src={selectedLanguage?.flag} alt={selectedLanguage?.name} /> {/* Usa optional chaining */}
-      </div>
-      {isOpen && (
-        <ul className="language-options">
-          {languages.map((language) => (
-            <li key={language.code} onClick={() => handleLanguageChange(language)}>
-              <img src={language.flag} alt={language.name} />
-            </li>
-          ))}
-        </ul>
-      )}
+    <> {/* <-- Frammento aggiunto qui */}
+      <div className="language-switcher" ref={selectRef}>
+        <div className="language-title" style={{ color: 'white', fontWeight: 'bold' }}>
+          {translations[currentLanguage].title}
+        </div>
+        <div className="selected-language" onClick={toggleOpen}>
+          <img src={selectedLanguage?.flag} alt={selectedLanguage?.name} />
+        </div>
+        {isOpen && (
+          <ul className="language-options">
+            {languages.map((language) => (
+              <li key={language.code} onClick={() => handleLanguageChange(language)}>
+                <img src={language.flag} alt={language.name} />
+              </li>
+            ))}
+          </ul>
+        )}
 
-      <style jsx>{`
-        /*... (stili invariati)... */
-      `}</style>
-    </div>
+        <style jsx>{`
+          .language-switcher {
+            position: relative;
+            display: inline-block;
+            margin: 10px;
+          }
+          .selected-language {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            background-size: 20px 12px;
+            justify-content: center;
+          }
+          .selected-language img {
+            width: 20px;
+            height: 12px;
+            margin-right: 5px;
+          }
+          .language-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: white;
+            z-index: 1;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+          }
+          .language-options li {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            cursor: pointer;
+            margin-bottom: 5px;
+          }
+          .language-options li:hover {
+            background-color: #f0f0f0;
+          }
+          .language-options li img {
+            width: 20px;
+            height: 12px;
+          }
+        `}</style>
+      </div>
+    </> // <-- Frammento chiuso qui
   );
 };
 
