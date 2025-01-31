@@ -18,4 +18,5 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  cursor: url('/cursor.webp'), auto; /* Assicurati che cursor.webp sia nella cartella public */
 }

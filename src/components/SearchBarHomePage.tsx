@@ -4,7 +4,22 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 
-const SearchBarHomePage = () => {
+const translations = {
+  it: {
+    searchPlaceholder: 'Cerca...',
+  },
+  en: {
+    searchPlaceholder: 'Search...',
+  },
+  es: {
+    searchPlaceholder: 'Buscar...',
+  },
+  fr: {
+    searchPlaceholder: 'Rechercher...',
+  },
+};
+
+const SearchBarHomePage = ({ currentLanguage }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -13,19 +28,19 @@ const SearchBarHomePage = () => {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    console.log('Ricerca:', searchTerm);
-    // logica di ricerca da inserire
+    console.log('Ricerca:', searchTerm); 
+    // Logic to handle search submission (e.g., make API call)
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ 
-      display: 'flex', 
+    <form onSubmit={handleSubmit} style={{
+      display: 'flex',
       width: '1000px',
-      position: 'relative' // Necessario per posizionare l'icona
+      position: 'relative', // Necessario per posizionare l'icona
     }}>
       <input
         type="text"
-        placeholder="Cerca..."
+        placeholder={translations[currentLanguage]?.searchPlaceholder}
         value={searchTerm}
         onChange={handleInputChange}
         style={{
@@ -46,7 +61,7 @@ const SearchBarHomePage = () => {
           border: 'none',
           backgroundColor: 'transparent',
           padding: 0,
-          cursor: 'pointer'
+          cursor: 'pointer',
         }}
       >
         <Image
@@ -57,7 +72,7 @@ const SearchBarHomePage = () => {
         />
       </button>
     </form>
-  );
-};
+  ); 
+}; 
 
 export default SearchBarHomePage;
