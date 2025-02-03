@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { getPlaceSuggestions } from '@/utils/geonames';
+//import { getPlaceSuggestions } from '@/utils/geonames';
+import { v4 as uuidv4 } from 'uuid';
+import { getPlaceSuggestions } from '@/utils/geocoding'
 
 const translations = {
     it: {
@@ -20,36 +22,44 @@ const translations = {
     },
 };
 
-const SearchBarHomePage = ({ currentLanguage }) => {
+const SearchBarHomePage = ({ currentLanguage }: { currentLanguage: string }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [suggestions, setSuggestions] = useState([]); // Ora suggestions è un array di oggetti
-    const [isLoading, setIsLoading] = useState(false); // Stato per il caricamento
+    const [suggestions, setSuggestions] = useState<Place[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const router = useRouter();
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        let timeoutId: NodeJS.Timeout;
-
         const fetchSuggestions = async (input: string) => {
-            setIsLoading(true); // Imposta isLoading a true durante la chiamata
+            setIsLoading(true);
+            setError(null);
+           
             try {
-                const results = await getPlaceSuggestions(input);
+                const results = await getPlaceSuggestions(input, currentLanguage);
                 setSuggestions(results);
+            } catch (error) {
+                console.error("Errore nel recupero dei suggerimenti:", error);
+                setSuggestions([]);
+                setError('Failed to load suggestions. Please try again.');
             } finally {
-                setIsLoading(false); // Imposta isLoading a false dopo la chiamata (successo o errore)
+                setIsLoading(false);
             }
         };
 
         if (searchTerm) {
-            timeoutId = setTimeout(() => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            timeoutRef.current = setTimeout(() => {
                 fetchSuggestions(searchTerm);
-            }, 300); // Debouncing
+            }, 300);
         } else {
             setSuggestions([]);
         }
 
-        return () => clearTimeout(timeoutId);
-    }, [searchTerm]);
-
+        return () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
+    }, [searchTerm, currentLanguage]);
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(event.target.value);
@@ -57,26 +67,21 @@ const SearchBarHomePage = ({ currentLanguage }) => {
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-
-        if (searchTerm) { // Verifica se searchTerm non è vuoto
+        if (searchTerm) {
             router.push(`/search?q=${encodeURIComponent(searchTerm)}`);
         } else {
             alert('Inserisci un paese o una città valida');
         }
     };
 
-    const handleSuggestionClick = (suggestion) => {
-        setSearchTerm(suggestion.name); // Usa il nome dal suggerimento
-        setSuggestions([]);
+    const handleSuggestionClick = (suggestion: Place) => {
+        setSearchTerm(suggestion.name);
+        setSuggestions([]); // Chiudi la lista dei suggerimenti
         router.push(`/search?q=${encodeURIComponent(suggestion.name)}`);
     };
 
     return (
-        <form onSubmit={handleSubmit} style={{
-            display: 'flex',
-            width: '1000px',
-            position: 'relative',
-        }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', width: '1000px', position: 'relative' }}>
             <input
                 type="text"
                 placeholder={translations[currentLanguage]?.searchPlaceholder}
@@ -92,37 +97,41 @@ const SearchBarHomePage = ({ currentLanguage }) => {
                 autoComplete="off"
             />
 
-            {isLoading && <p>Caricamento suggerimenti...</p>} {/* Mostra indicatore di caricamento */}
+            {isLoading && <p>Caricamento suggerimenti...</p>}
+            {error && <p style={{ color: 'red' }}>{error}</p>}
 
             {suggestions.length > 0 && (
-                <ul style={{
-                    position: 'absolute',
-                    top: '45px',
-                    width: '100%',
-                    border: '1px solid #ccc',
-                    backgroundColor: 'white',
-                    listStyleType: 'none',
-                    padding: '0',
-                    margin: '0',
-                    zIndex: 10,
-                }}>
-                    {suggestions.map((suggestion, index) => (
+                <ul
+                    style={{
+                        position: 'absolute',
+                        top: '45px',  // Regola la distanza dal campo di input
+                        width: '100%',
+                        border: '1px solid #ccc',
+                        backgroundColor: 'white',
+                        listStyleType: 'none',
+                        padding: '0',
+                        margin: '0',
+                        zIndex: 10, // Assicura che sia sopra gli altri elementi
+                        maxHeight: '200px', // Imposta un'altezza massima
+                        overflowY: 'auto', // Aggiungi la barra di scorrimento se necessario
+                    }}
+                >
+                    {suggestions.map((suggestion) => (
                         <li
-                            key={index}
+                            key={uuidv4()} // Usa uuid per le chiavi
                             onClick={() => handleSuggestionClick(suggestion)}
                             style={{
                                 padding: '10px',
                                 cursor: 'pointer',
-                                borderBottom: index !== suggestions.length - 1 ? '1px solid #ccc' : 'none',
-                                backgroundColor: '#f8f8f8'
+                                borderBottom: suggestions.indexOf(suggestion) !== suggestions.length - 1 ? '1px solid #ccc' : 'none',
+                                backgroundColor: '#f8f8f8',
                             }}
                         >
-                            {suggestion.name}, {suggestion.country} {/* Mostra sia città che paese */}
+                            {suggestion.name}, {suggestion.country}
                         </li>
                     ))}
                 </ul>
             )}
-
             <button
                 type="submit"
                 style={{

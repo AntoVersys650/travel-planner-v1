@@ -88,6 +88,7 @@ export default function Home() {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isCurrencyMenuOpen, setIsCurrencyMenuOpen] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState('eur');
+  const [windowHeight, setWindowHeight] = useState(0);
 
   // Posizioni configurabili tramite codice (non visibili a video)
   const [profileButtonPosition] = useState({ top: 10, right: 20 });
@@ -118,6 +119,12 @@ export default function Home() {
     document.addEventListener('click', handleClickOutside);
     return () =>
       document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setWindowHeight(window.innerHeight);
+    }
   }, []);
 
   const handleBluePortionChange = (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -170,7 +177,7 @@ export default function Home() {
   return (
     <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       {/* Header Blu: altezza configurabile tramite codice */}
-      <div style={{ height: `${window.innerHeight / bluePortion}px`, width: '100%', backgroundColor: '#00008B' }}>
+      <div style={{ height: `${windowHeight / bluePortion}px`, width: '100%', backgroundColor: '#00008B' }}>
         <input type="number" value={bluePortion} onChange={handleBluePortionChange} style={{ display: 'none' }} />
       </div>
 
