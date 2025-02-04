@@ -21,7 +21,7 @@ const PlaceSuggestions: React.FC<PlaceSuggestionsProps> = ({ suggestions, onSele
     return (
         <ul>
             {suggestions.map((place) => (
-                <li key={place.name} onClick={() => onSelect(place)}>
+                <li key={place.name} onClick={() => onSelect(place)} style={{ cursor: 'pointer' }}>
                     {place.name}, {place.country}
                 </li>
             ))}

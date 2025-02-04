@@ -18,23 +18,16 @@ const LanguageSwitcher = ({ currentLanguage, onLanguageChange }: LanguageSwitche
         { code: 'fr', flag: '/FR Flag mini.png' },
     ];
 
-    const languageNames: { [key: string]: { [key: string]: string } } = {
+    const languageNames = {
         it: { it: 'Italiano', en: 'Inglese', es: 'Spagnolo', fr: 'Francese' },
         en: { it: 'Italian', en: 'English', es: 'Spanish', fr: 'French' },
         es: { it: 'Italiano', en: 'Inglés', es: 'Español', fr: 'Francés' },
         fr: { it: 'Italien', en: 'Anglais', es: 'Espagnol', fr: 'Français' },
     };
 
-    const languageLabels: { [key: string]: string } = {
-        it: 'Lingua',
-        en: 'Language',
-        es: 'Idioma',
-        fr: 'Langue'
-    };
-
     const toggleOpen = () => setIsOpen((prev) => !prev);
 
-    const handleLanguageChangeInternal = (languageCode: string) => {
+    const handleLanguageChange = (languageCode: string) => {
         setIsOpen(false);
         localStorage.setItem('language', languageCode);
         onLanguageChange(languageCode);
@@ -52,12 +45,6 @@ const LanguageSwitcher = ({ currentLanguage, onLanguageChange }: LanguageSwitche
         return () => document.removeEventListener('click', handleClickOutside);
     }, []);
 
-    // Use optional chaining and a fallback to avoid undefined errors
-       const selectedLanguage = languages.find((lang) => lang.code === currentLanguage) || languages[0];
-    // Safely get the language label, defaulting to a string if not found
-    const currentLanguageLabel = languageLabels[currentLanguage] || "Language"; // Or any suitable default
-
-    // Define buttonStyle *BEFORE* using it
     const buttonStyle = {
         backgroundColor: 'transparent',
         border: 'none',
@@ -66,7 +53,7 @@ const LanguageSwitcher = ({ currentLanguage, onLanguageChange }: LanguageSwitche
         cursor: 'pointer',
         fontWeight: 'bold',
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'center',
     };
 
     const dropdownStyle = {
@@ -79,34 +66,21 @@ const LanguageSwitcher = ({ currentLanguage, onLanguageChange }: LanguageSwitche
         padding: '5px 10px',
         borderRadius: '5px',
         minWidth: '120px',
-        boxShadow: '0px 4px 10px rgba(0,0,0,0.2)'
+        boxShadow: '0px 4px 10px rgba(0,0,0,0.2)',
     };
 
-    return ( 
-        <div className="language-switcher" ref={selectRef} style={{ position: 'relative', display: 'inline-block' }}>
+    return (
+        <div ref={selectRef} style={{ position: 'relative', display: 'inline-block' }}>
             <button onClick={toggleOpen} style={buttonStyle}>
-                <span style={{ marginRight: '5px' }}>{currentLanguageLabel}</span>
-                <img
-                    src={selectedLanguage?.flag}
-                    alt={selectedLanguage?.code}
-                    style={{ width: '20px', height: '12px' }}
-                />
-
+                <span style={{ marginRight: '5px' }}>{languageNames[currentLanguage]?.[currentLanguage]}</span>
+                <img src={languages.find((lang) => lang.code === currentLanguage)?.flag} alt={currentLanguage} style={{ width: '20px', height: '12px' }} />
             </button>
             {isOpen && (
                 <div style={dropdownStyle}>
                     {languages.map((lang) => (
-                        <div
-                            key={lang.code}
-                            onClick={() => handleLanguageChangeInternal(lang.code)}
-                            style={{ display: 'flex', alignItems: 'center', padding: '5px 0', cursor: 'pointer' }}
-                        >
-                            <img
-                                src={lang.flag}
-                                alt={lang.code}
-                                style={{ width: '20px', height: '12px', marginRight: '5px' }}
-                            />
-                            <span>{languageNames?.[currentLanguage]?.[lang.code] || ''}</span> {/* Optional chaining here */}
+                        <div key={lang.code} onClick={() => handleLanguageChange(lang.code)} style={{ display: 'flex', alignItems: 'center', padding: '5px 0', cursor: 'pointer' }}>
+                            <img src={lang.flag} alt={lang.code} style={{ width: '20px', height: '12px', marginRight: '5px' }} />
+                            <span>{languageNames[currentLanguage]?.[lang.code]}</span>
                         </div>
                     ))}
                 </div>

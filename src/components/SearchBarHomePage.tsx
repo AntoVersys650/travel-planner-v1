@@ -115,14 +115,14 @@ const SearchBarHomePage = ({ currentLanguage }: { currentLanguage: string }) => 
             listStyleType: 'none',
             padding: '0',
             margin: '0',
-            zIndex: 10, // Assicura che sia sopra gli altri elementi
-            maxHeight: '200px', // Imposta un'altezza massima
-            overflowY: 'auto', // Aggiungi la barra di scorrimento se necessario
+            zIndex: 10,
+            maxHeight: '200px',
+            overflowY: 'auto',
           }}
         >
           {suggestions.map((suggestion) => (
             <li
-              key={uuidv4()} // Attenzione: l'uso di uuid come key genera un nuovo valore ad ogni render
+              key={uuidv4()} // Usa uuid come key (nota: genera una nuova chiave ad ogni render)
               onClick={() => handleSuggestionClick(suggestion)}
               style={{
                 padding: '10px',
