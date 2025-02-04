@@ -2,12 +2,15 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import Header from 'app/components/Header'; // Importa l'header
+// Se usi alias configurato, ad esempio con "@", usa:
+import Header from '@/components/Header';
+// Altrimenti, se il file Header.tsx si trova in "src/app/components", potresti dover usare:
+// import Header from '../components/Header';
 
 const SearchPage = () => {
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('q');
-  const language = searchParams.get('lang') || 'en'; // Predefinito a 'en' se non è presente
+  const language = searchParams.get('lang') || 'en';
 
   const [results, setResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -17,11 +20,15 @@ const SearchPage = () => {
     const fetchSearchResults = async (term: string) => {
       setIsLoading(true);
       setError(null);
-
       try {
-        // Simula una chiamata API per cercare i risultati basati su 'term'
-        const fetchedResults = await fetch(`/api/search?term=${encodeURIComponent(term)}&lang=${encodeURIComponent(language)}`);
-        const data = await fetchedResults.json();
+        // Assicurati di avere un endpoint API oppure usa un mock
+        const response = await fetch(
+          `/api/search?term=${encodeURIComponent(term)}&lang=${encodeURIComponent(language)}`
+        );
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
         setResults(data.results);
       } catch (error) {
         console.error('Errore nella ricerca:', error);
@@ -38,19 +45,17 @@ const SearchPage = () => {
 
   return (
     <div>
-      <Header /> {/* Includi l'header */}
+      <Header /> {/* Include l'header */}
       <div style={{ padding: '20px' }}>
         <h1>Risultati per "{searchTerm}"</h1>
 
         {isLoading && <p>Caricamento risultati...</p>}
         {error && <p style={{ color: 'red' }}>{error}</p>}
-
         {!isLoading && !error && results.length === 0 && <p>Nessun risultato trovato.</p>}
 
         <ul>
           {results.map((result, index) => (
             <li key={index}>
-              {/* Renderizza i risultati di ricerca */}
               <h2>{result.title}</h2>
               <p>{result.description}</p>
             </li>
