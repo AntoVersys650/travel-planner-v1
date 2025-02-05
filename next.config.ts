@@ -1,13 +1,14 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import type { NextConfig } from 'next';
+
+const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
         source: '/api/geonames/:path*',
-        destination: 'https://api.geonames.org/:path*', // Proxy verso l'API GeoNames
+        destination: 'https://api.geonames.org/:path*',
       },
     ];
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig; // <-- The crucial change: export default

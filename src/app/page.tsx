@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import SearchBarHomePage from '@/components/SearchBarHomePage';
-import Header from 'src/components/Header';
+import SearchBarHomePage from './components/SearchBarHomePage';
+import Header from './components/Header';
 import Image from 'next/image';
 
 const translations = {

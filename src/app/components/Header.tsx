@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 const translations = {
   it: {
@@ -19,7 +19,8 @@ const translations = {
     accommodations: 'Search Accommodations',
     rentals: 'Search Rentals',
     home: 'Home',
-  },es: {
+  },
+  es: {
     profile: 'Perfil',
     flights: 'Buscar Vuelos',
     accommodations: 'Buscar Alojamientos',
@@ -33,8 +34,6 @@ const translations = {
     rentals: 'Rechercher des Locations',
     home: 'Page d\'accueil',
   },
-
-  // Aggiungi altre lingue se necessario
 };
 
 const profileMenuOptions = {
@@ -65,7 +64,7 @@ const profileMenuOptions = {
     { label: 'Favoris', href: '/favorites' },
     { label: 'Devenir Travel Planner', href: '/planner' },
     { label: 'Se Déconnecter', href: '/logout' },
-  ],  
+  ],
 };
 
 const currencyOptions = [
@@ -82,6 +81,13 @@ export default function Header() {
 
   const profileRef = useRef<HTMLDivElement>(null);
   const currencyRef = useRef<HTMLDivElement>(null);
+
+  // Dimensioni configurabili per l'immagine del profilo
+  const profileIconWidth = 35;  // Modifica questo valore per la larghezza
+  const profileIconHeight = 35; // Modifica questo valore per l'altezza
+
+  // Variabile per configurare il margine superiore dell'immagine del profilo (puoi regolare questo valore per spostarla in verticale)
+  const profileImageMarginTop = '-50px';
 
   useEffect(() => {
     const storedLanguage = localStorage.getItem('language') || 'it';
@@ -114,7 +120,7 @@ export default function Header() {
     setIsCurrencyMenuOpen(false);
   };
 
-  // Utilizza il fallback sulla lingua: se currentLanguage non esiste in translations, usa 'it'
+  // Fallback: se currentLanguage non esiste in translations, usa 'it'
   const langTranslations = translations[currentLanguage] || translations.it;
 
   const menuButtonStyle = {
@@ -137,6 +143,7 @@ export default function Header() {
     borderRadius: '5px',
     minWidth: '200px',
     boxShadow: '0px 4px 10px rgba(0,0,0,0.2)',
+    zIndex: 1000,
   };
 
   return (
@@ -145,92 +152,118 @@ export default function Header() {
         position: 'fixed',
         top: '0',
         left: '0',
-        right: '20px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '10px',
-        zIndex: 20,
+        right: '0',
         backgroundColor: '#00008B',
+        zIndex: 50,
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '10px',
       }}
     >
-      <div style={{ display: 'flex', gap: '20px' }}>
+      {/* Prima riga: Logo */}
+      <div style={{ textAlign: 'center', marginBottom: '10px', marginLeft: '10px' }}>
         <Link href="/">
           <Image
-            src="/compasswhitehome.png"
-            alt="Pagina Iniziale"
-            width={20}
-            height={20}
-            style={{ marginTop: '5px' }}
+            src="/logo/ytplogo.png"
+            alt="YTP Logo"
+            width={250}
+            height={50}
+            priority
           />
-        </Link>
-        <Link href="/flights">
-          <button style={menuButtonStyle}>{langTranslations.flights}</button>
-        </Link>
-        <Link href="/accommodations">
-          <button style={menuButtonStyle}>{langTranslations.accommodations}</button>
-        </Link>
-        <Link href="/rentals">
-          <button style={menuButtonStyle}>{langTranslations.rentals}</button>
         </Link>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div style={{ position: 'relative' }} ref={profileRef}>
-          <button onClick={toggleProfileMenu} style={menuButtonStyle}>
-            {langTranslations.profile}
-          </button>
-          {isProfileMenuOpen && (
-            <div style={dropdownStyle}>
-              {profileMenuOptions[currentLanguage]?.map((option, index) => (
-                <Link href={option.href} key={index}>
-                  <span
-                    style={{
-                      display: 'block',
-                      padding: '5px 0',
-                      color: 'white',
-                      textDecoration: 'none',
-                      borderBottom:
-                        index !== profileMenuOptions[currentLanguage].length - 1
-                          ? '1px solid rgba(255,255,255,0.3)'
-                          : 'none',
-                    }}
-                  >
-                    {option.label}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
+      {/* Seconda riga: Navigazione e menu a destra */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        {/* Navigazione a sinistra */}
+        <div style={{ display: 'flex', gap: '20px' }}>
+          <Link href="/flights">
+            <button style={menuButtonStyle}>{langTranslations.flights}</button>
+          </Link>
+          <Link href="/accommodations">
+            <button style={menuButtonStyle}>{langTranslations.accommodations}</button>
+          </Link>
+          <Link href="/rentals">
+            <button style={menuButtonStyle}>{langTranslations.rentals}</button>
+          </Link>
         </div>
 
-        <div style={{ position: 'relative' }} ref={currencyRef}>
-          <button onClick={toggleCurrencyMenu} style={menuButtonStyle}>
-            {currencyOptions.find((c) => c.value === selectedCurrency)?.label}
-          </button>
-          {isCurrencyMenuOpen && (
-            <div style={dropdownStyle}>
-              {currencyOptions.map((option, index) => (
-                <div
-                  key={index}
-                  onClick={() => selectCurrency(option.value)}
-                  style={{
-                    cursor: 'pointer',
-                    padding: '5px 0',
-                    borderBottom:
-                      index !== currencyOptions.length - 1
-                        ? '1px solid rgba(255,255,255,0.3)'
-                        : 'none',
-                  }}
-                >
-                  {option.label}
+        {/* Menu a destra: Immagine del profilo (con posizione configurabile) e, sotto, i dropdown di valuta e lingua */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
+          {/* Immagine del profilo */}
+          <div style={{ position: 'relative', marginTop: profileImageMarginTop }} ref={profileRef}>
+            <button
+              onClick={toggleProfileMenu}
+              style={{ ...menuButtonStyle, padding: 0, backgroundColor: 'transparent', border: 'none' }}
+            >
+              <Image
+                src="/logo/profile.png"
+                alt="Profile"
+                width={profileIconWidth}
+                height={profileIconHeight}
+              />
+            </button>
+            {isProfileMenuOpen && (
+              <div style={dropdownStyle}>
+                {profileMenuOptions[currentLanguage]?.map((option, index) => (
+                  <Link href={option.href} key={index}>
+                    <span
+                      style={{
+                        display: 'block',
+                        padding: '5px 0',
+                        color: 'white',
+                        textDecoration: 'none',
+                        borderBottom:
+                          index !== profileMenuOptions[currentLanguage].length - 1
+                            ? '1px solid rgba(255,255,255,0.3)'
+                            : 'none',
+                      }}
+                    >
+                      {option.label}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Riga con i dropdown di valuta e lingua */}
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ position: 'relative' }} ref={currencyRef}>
+              <button onClick={toggleCurrencyMenu} style={menuButtonStyle}>
+                {currencyOptions.find((c) => c.value === selectedCurrency)?.label}
+              </button>
+              {isCurrencyMenuOpen && (
+                <div style={dropdownStyle}>
+                  {currencyOptions.map((option, index) => (
+                    <div
+                      key={index}
+                      onClick={() => selectCurrency(option.value)}
+                      style={{
+                        cursor: 'pointer',
+                        padding: '5px 0',
+                        borderBottom:
+                          index !== currencyOptions.length - 1
+                            ? '1px solid rgba(255,255,255,0.3)'
+                            : 'none',
+                      }}
+                    >
+                      {option.label}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
 
-        <LanguageSwitcher currentLanguage={currentLanguage} onLanguageChange={setCurrentLanguage} />
+            <LanguageSwitcher currentLanguage={currentLanguage} onLanguageChange={setCurrentLanguage} />
+          </div>
+        </div>
       </div>
     </header>
   );
