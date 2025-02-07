@@ -3,9 +3,10 @@
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import Header from '../components/Header'; // Assicurati che il percorso sia corretto
+import Header from '../components/Header';
+import NextImage from 'next/image';
 
-// Importa dinamicamente LeafletMap (assumiamo che sia in src/app/components/LeafletMap.tsx)
+// Importa dinamicamente il componente LeafletMap
 const LeafletMap = dynamic(() => import('../components/LeafletMap'), { ssr: false });
 
 const translations = {
@@ -42,8 +43,8 @@ const translations = {
     tipologia: 'Tipo',
     alloggio: 'Alojamiento',
     noleggio: 'Alquiler',
-    voli: 'Vuelos',
-    risultati: 'Resultados',
+    voli: 'Flights',
+    risultati: 'Results',
     nessunRisultato: 'No se encontraron resultados.',
     caricamentoRisultati: 'Cargando resultados...',
     erroreCaricamento: 'Error al cargar resultados.',
@@ -53,47 +54,75 @@ const translations = {
     da: 'De',
     a: 'À',
     tipologia: 'Catégorie',
-    alloggio: 'Hébergement',
-    noleggio: 'Location',
-    voli: 'Vols',
-    risultati: 'Résultats',
-    nessunRisultato: 'Aucun résultat trouvé.',
-    caricamentoRisultati: 'Chargement des résultats...',
-    erroreCaricamento: 'Erreur lors du chargement des résultats.',
+    alloggio: 'Accommodation',
+    noleggio: 'Rental',
+    voli: 'Flights',
+    risultati: 'Results',
+    nessunRisultato: 'No result found.',
+    caricamentoRisultati: 'Loading results...',
+    erroreCaricamento: 'Error loading results.',
   },
 };
+
+// Funzione per ottenere le coordinate tramite Nominatim
+async function getCoordinates(city: string): Promise<[number, number] | null> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json`
+    );
+    const data = await res.json();
+    if (data && data.length > 0) {
+      return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+    }
+    return null;
+  } catch (error) {
+    console.error('Error in getCoordinates:', error);
+    return null;
+  }
+}
+
+// Funzione per calcolare la distanza con la formula di Haversine
+function haversineDistance(coord1: [number, number], coord2: [number, number]): number {
+  const toRad = (value: number) => (value * Math.PI) / 180;
+  const R = 6371; // km
+  const dLat = toRad(coord2[0] - coord1[0]);
+  const dLon = toRad(coord2[1] - coord1[1]);
+  const lat1 = toRad(coord1[0]);
+  const lat2 = toRad(coord2[0]);
+  const a = Math.sin(dLat / 2) ** 2 + Math.sin(dLon / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+// Funzione per calcolare il totale dei km del percorso
+async function calculateRouteDistance(coords: [number, number][]): Promise<number> {
+  let total = 0;
+  for (let i = 1; i < coords.length; i++) {
+    total += haversineDistance(coords[i - 1], coords[i]);
+  }
+  return Math.round(total);
+}
 
 const SearchPage = () => {
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('q');
 
-  // Stato per la lingua, inizializzato con 'en' come default
+  // Stato per la lingua (default 'en')
   const [language, setLanguage] = useState('en');
-
   useEffect(() => {
     const storedLanguage = localStorage.getItem('language') || 'en';
     setLanguage(storedLanguage);
-
     const handleLanguageChange = (event: CustomEvent) => {
       setLanguage(event.detail);
     };
-
     window.addEventListener('languageChange', handleLanguageChange);
     return () => window.removeEventListener('languageChange', handleLanguageChange);
   }, []);
 
-  // Stati per i risultati
+  // Stati per i risultati (esempio)
   const [results, setResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Stati per i filtri
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
-  const [showAlloggi, setShowAlloggi] = useState(true);
-  const [showNoleggi, setShowNoleggi] = useState(true);
-  const [showVoli, setShowVoli] = useState(true);
-
   useEffect(() => {
     const fetchSearchResults = async (term: string) => {
       setIsLoading(true);
@@ -114,143 +143,168 @@ const SearchPage = () => {
         setIsLoading(false);
       }
     };
-
     if (searchTerm) {
       fetchSearchResults(searchTerm);
     }
   }, [searchTerm, language]);
 
-  // Risultati di esempio se l'API non restituisce nulla
-  const exampleResults = [
-    { title: 'Hotel A', description: translations[language].alloggio, type: 'alloggio' },
-    { title: 'Volo 1', description: translations[language].voli, type: 'volo' },
-    { title: 'Noleggio 1', description: translations[language].noleggio, type: 'noleggio' },
-  ];
+  // Stati per l'itinerario: array di città aggiuntive e input corrente
+  const [itinerary, setItinerary] = useState<string[]>([]);
+  const [currentInput, setCurrentInput] = useState('');
 
-  const combinedResults = results.length > 0 ? results : exampleResults;
+  // Stati per le coordinate della rotta e il totale dei km
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
+  const [totalKm, setTotalKm] = useState(0);
+  const [isCalculatingKm, setIsCalculatingKm] = useState(false);
 
-  const filteredResults = combinedResults.filter((result) => {
-    if (result.type === 'alloggio' && showAlloggi) return true;
-    if (result.type === 'noleggio' && showNoleggi) return true;
-    if (result.type === 'volo' && showVoli) return true;
-    return false;
-  });
+  // Aggiorna le coordinate della rotta e il totale dei km quando il punto di partenza o l'itinerario cambiano
+  useEffect(() => {
+    async function updateRoute() {
+      setIsCalculatingKm(true);
+      if (!searchTerm) {
+        setRouteCoordinates([]);
+        setTotalKm(0);
+        setIsCalculatingKm(false);
+        return;
+      }
+      const coords: [number, number][] = [];
+      const start = await getCoordinates(searchTerm);
+      if (start) {
+        coords.push(start);
+      }
+      for (const city of itinerary) {
+        if (city.trim() !== '') {
+          const c = await getCoordinates(city);
+          if (c) {
+            coords.push(c);
+          }
+        }
+      }
+      setRouteCoordinates(coords);
+      if (coords.length > 1) {
+        const km = await calculateRouteDistance(coords);
+        setTotalKm(km);
+      } else {
+        setTotalKm(0);
+      }
+      setIsCalculatingKm(false);
+    }
+    updateRoute();
+  }, [searchTerm, itinerary]);
 
-  // Stile per il pulsante "Genera Avventura"
+  // Gestione dell'input: conferma città con Enter
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (currentInput.trim() !== '') {
+        setItinerary(prev => [...prev, currentInput.trim()]);
+        setCurrentInput('');
+      }
+    }
+  };
+
+  // Funzione per aggiungere la città corrente all'itinerario (tramite clic sull'icona della lente)
+  const handleAddCity = () => {
+    if (currentInput.trim() !== '') {
+      setItinerary(prev => [...prev, currentInput.trim()]);
+      setCurrentInput('');
+    }
+  };
+
+  // Funzione per rimuovere una città dall'itinerario
+  const handleRemoveCity = (index: number) => {
+    setItinerary(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Stile per il pulsante "Genera Avventura" (bordo arrotondato)
   const adventureButtonStyle = {
     padding: '10px 20px',
-    borderRadius: '5px',
+    borderRadius: '20px',
     color: '#00008B',
     backgroundColor: 'white',
     border: '1px solid #00008B',
     cursor: 'pointer',
-    marginTop: '5px', // Regola questo valore per spostare verticalmente il pulsante
+    marginTop: '5px',
     fontSize: '20px',
     fontWeight: 'bold',
-    width: '100%', // Estende il pulsante per tutta la larghezza
+    width: '100%',
   };
 
-  // Variabile per configurare il margine superiore della mappa (per posizionarla in verticale)
-  const mapMarginTop = '53px'; // Imposta a '0px' per attaccarla all'header; altrimenti, modifica il valore
+  // Stile per l'input itinerario (bordo arrotondato, 1px solid #00008B, testo in grassetto)
+  const itineraryInputStyle = {
+    width: 'calc(100% - 40px)',
+    padding: '5px',
+    fontWeight: 'bold',
+    border: '1px solid #00008B',
+    borderRadius: '5px',
+    marginRight: '5px',
+  };
+
+  // Stile per il pulsante "Enter" (lente, all'interno del pulsante)
+  const enterButtonStyle = {
+    backgroundColor: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+  };
+
+  // Variabili per configurare le posizioni verticali delle sezioni
+  const itinerarySectionMarginTop = '100px';
+  const mapMarginTop = '100px';
+
+  // Stile per lo spinner (placeholder)
+  const spinnerStyle = {
+    fontWeight: 'bold',
+    color: '#00008B',
+  };
+
+  const langTranslations = translations[language] || translations.en;
 
   return (
     <div>
-      {/* Header sempre visibile */}
       <Header />
-
-      {/* Wrapper per il contenuto */}
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        {/* Sezione orizzontale per la mappa con margine superiore configurabile */}
-        <div style={{ width: '100%', height: '400px', marginTop: mapMarginTop, zIndex: 0 }}>
-          <LeafletMap location={searchTerm} />
-        </div>
-
-        {/* Pulsante "Genera Avventura" attaccato alla mappa e esteso per tutta la larghezza */}
-        <div style={{ width: '95%' , textAlign: 'center', marginTop: '1px', marginLeft: '35px', zIndex: 5 }}>
-          <button style={adventureButtonStyle}>
-            {translations[language].generaAvventura}
-          </button>
-        </div>
-
-        {/* Sezione filtri e risultati */}
-        <div style={{ display: 'flex', flexDirection: 'row', padding: '20px' }}>
-          {/* Sezione filtri (sinistra) con linea centrale */}
-          <div style={{ flex: 1, padding: '30px', borderRight: '1px solid #ccc' }}>
-            {/* Campi data affiancati in grassetto */}
-            <div style={{ display: 'flex', gap: '20px', fontWeight: 'bold', marginBottom: '20px' }}>
-              <div>
-                <label htmlFor="fromDate">{translations[language].da}:</label>
-                <br />
-                <input
-                  type="date"
-                  id="fromDate"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                  style={{ fontWeight: 'bold' }}
-                />
-              </div>
-              <div>
-                <label htmlFor="toDate">{translations[language].a}:</label>
-                <br />
-                <input
-                  type="date"
-                  id="toDate"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                  style={{ fontWeight: 'bold' }}
-                />
-              </div>
-            </div>
-
-            <h2 style={{ fontWeight: 'bold' }}>{translations[language].tipologia}</h2>
-            <div>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={showAlloggi}
-                  onChange={(e) => setShowAlloggi(e.target.checked)}
-                />
-                {translations[language].alloggio}
-              </label>
-            </div>
-            <div>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={showNoleggi}
-                  onChange={(e) => setShowNoleggi(e.target.checked)}
-                />
-                {translations[language].noleggio}
-              </label>
-            </div>
-            <div>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={showVoli}
-                  onChange={(e) => setShowVoli(e.target.checked)}
-                />
-                {translations[language].voli}
-              </label>
-            </div>
+      <div style={{ display: 'flex', flexDirection: 'row', padding: '20px', gap: '20px' }}>
+        {/* Sezione Itinerario (a sinistra) */}
+        <div style={{ flexBasis: '30%', marginTop: itinerarySectionMarginTop, maxHeight: '400px', overflowY: 'auto', borderRight: '1px solid #ccc', paddingRight: '10px' }}>
+          <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>
+            Totale km: {isCalculatingKm ? <span style={spinnerStyle}>Calcolo km...</span> : `${totalKm} km`}
           </div>
-
-          {/* Sezione risultati (centrale) */}
-          <div style={{ flex: 2, padding: '20px' }}>
-            <h2 style={{ fontWeight: 'bold' }}>{translations[language].risultati}</h2>
-            {isLoading && <p>{translations[language].caricamentoRisultati}</p>}
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            {!isLoading && !error && filteredResults.length === 0 && (
-              <p>{translations[language].nessunRisultato}</p>
-            )}
-            <ul>
-              {filteredResults.map((result, index) => (
-                <li key={index}>
-                  <h3>{result.title}</h3>
-                  <p>{result.description}</p>
-                </li>
-              ))}
-            </ul>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+            <input
+              type="text"
+              value={currentInput}
+              onChange={(e) => setCurrentInput(e.target.value)}
+              onKeyDown={handleInputKeyDown}
+              placeholder="Inserisci città"
+              pattern="[A-Za-z\s]+"
+              style={itineraryInputStyle}
+            />
+            <button onClick={handleAddCity} style={enterButtonStyle}>
+              <NextImage
+                src="/magnifying-glass-search-free-png.webp"
+                alt="Invia città"
+                width={30}
+                height={30}
+              />
+            </button>
+          </div>
+          <div>
+            {itinerary.map((city, index) => (
+              <div key={index} style={{ marginBottom: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 'bold' }}>{city}</span>
+                <button onClick={() => handleRemoveCity(index)} style={{ cursor: 'pointer' }}>X</button>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Sezione Mappa e Pulsante "Genera Avventura" (a destra) */}
+        <div style={{ flexBasis: '70%', marginTop: mapMarginTop }}>
+          <div style={{ width: '100%', height: '300px' }}>
+            <LeafletMap location={searchTerm} routeCoordinates={routeCoordinates} />
+          </div>
+          <div style={{ textAlign: 'center', marginTop: '5px' }}>
+            <button style={adventureButtonStyle}>
+              {langTranslations.generaAvventura}
+            </button>
           </div>
         </div>
       </div>

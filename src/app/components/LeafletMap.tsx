@@ -1,74 +1,69 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
+import { useEffect } from 'react';
 import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Configura le icone di default per Leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+  iconUrl: require('leaflet/dist/images/marker-icon.png'),
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+});
 
 interface LeafletMapProps {
   location: string | null | undefined;
+  routeCoordinates: [number, number][];
 }
 
-const LeafletMap: React.FC<LeafletMapProps> = ({ location }) => {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<any>(null);
-
-  // Effetto per inizializzare la mappa una sola volta
+const RecenterAutomatically = ({ coords }: { coords: [number, number][] }) => {
+  const map = useMap();
   useEffect(() => {
-    // Importa dinamicamente Leaflet solo lato client
-    import('leaflet').then((module) => {
-      const L = module.default;
-      // Configura le icone di default di Leaflet
-      delete L.Icon.Default.prototype._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-        iconUrl: require('leaflet/dist/images/marker-icon.png'),
-        shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
-      });
-
-      if (mapRef.current && !map) {
-        const newMap = L.map(mapRef.current).setView([0, 0], 2);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        }).addTo(newMap);
-        setMap(newMap);
-      }
-    });
-    // Pulizia: rimuovi la mappa al dismount
-    return () => {
-      if (map) {
-        map.remove();
-      }
-    };
-  }, []); // Esegue solo una volta
-
-  // Effetto per aggiornare la vista della mappa quando la location cambia
-  useEffect(() => {
-    if (map && location) {
-      import('leaflet').then((module) => {
-        const L = module.default;
-        // Esegui la richiesta a Nominatim per ottenere le coordinate
-        fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-            location
-          )}&format=json`
-        )
-          .then((res) => res.json())
-          .then((data) => {
-            if (data && data.length > 0) {
-              const { lat, lon } = data[0];
-              map.setView([parseFloat(lat), parseFloat(lon)], 10);
-              // Aggiungi un marker
-              L.marker([parseFloat(lat), parseFloat(lon)]).addTo(map);
-            }
-          })
-          .catch((err) => {
-            console.error('Errore nella geocodifica:', err);
-          });
-      });
+    if (coords.length > 0) {
+      map.fitBounds(coords, { animate: true });
     }
-  }, [location, map]);
+  }, [map, coords]);
+  return null;
+};
 
-  return <div ref={mapRef} style={{ width: '100%', height: '100%' }} />;
+const LeafletMap: React.FC<LeafletMapProps> = ({ location, routeCoordinates }) => {
+  // Se non ci sono coordinate, usa Roma come centro di default
+  const defaultCenter: [number, number] =
+    routeCoordinates && routeCoordinates.length > 0 ? routeCoordinates[0] : [41.9028, 12.4964];
+
+  // Usa un id fisso per il contenitore della mappa
+  const mapContainerId = 'mapContainer';
+
+  useEffect(() => {
+    // Prima di montare la mappa, se il contenitore esiste ed è già inizializzato, "resetta" _leaflet_id
+    const container = document.getElementById(mapContainerId);
+    if (container && (container as any)._leaflet_id) {
+      (container as any)._leaflet_id = null;
+    }
+  }, [mapContainerId]);
+
+  return (
+    <MapContainer
+      id={mapContainerId}
+      center={defaultCenter}
+      zoom={10}
+      style={{ width: '100%', height: '100%' }}
+    >
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      {routeCoordinates.map((coord, index) => (
+        <Marker key={index} position={coord} />
+      ))}
+      {routeCoordinates.length > 1 && (
+        <Polyline positions={routeCoordinates} color="blue" />
+      )}
+      <RecenterAutomatically coords={routeCoordinates} />
+    </MapContainer>
+  );
 };
 
 export default LeafletMap;
