@@ -43,22 +43,54 @@ export default function Home() {
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      {/* Video di sfondo */}
+      <video
+        autoPlay
+        loop
+        muted
+        style={{
+          position: 'absolute',
+          top: 50,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          zIndex: -2 
+        }}
+      >
+        <source src="/YTP_01.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+
+      {/* Overlay bianco trasparente che copre l'intero schermo */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(255, 255, 255, 0.45)', // Trasparenza del bianco
+          zIndex: -1 // Overlay sopra il video
+        }}
+      />
+
       {/* Header comune per tutte le pagine */}
       <Header />
 
       {/* Area principale */}
-      <div style={{ flexGrow: 1, backgroundColor: 'white', paddingTop: '100px' }}>
+      <div style={{ flexGrow: 1, paddingTop: '90px', width: '100%' }}>
         <main
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            padding: '20px'
+            padding: '130px'
           }}
         >
           <div style={{ textAlign: 'center', color: '#00008B' }}>
-            <h1 style={{ fontWeight: 'bold', fontSize: '2.5rem' }}>
+            <h1 style={{ fontWeight: 'bold', fontSize: '3.5rem' }}>
               {translations[currentLanguage].title}
             </h1>
           </div>
