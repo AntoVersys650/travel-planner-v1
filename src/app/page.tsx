@@ -54,7 +54,7 @@ export default function Home() {
           top: 50,
           left: 0,
           width: '100%',
-          height: '100%',
+          height: '95%',
           objectFit: 'cover',
           zIndex: -2 
         }}
@@ -71,7 +71,7 @@ export default function Home() {
           left: 0,
           width: '100%',
           height: '100%',
-          backgroundColor: 'rgba(255, 255, 255, 0.45)', // Trasparenza del bianco
+          backgroundColor: 'rgba(216, 255, 255, 0.40)', // Trasparenza del bianco
           zIndex: -1 // Overlay sopra il video
         }}
       />
