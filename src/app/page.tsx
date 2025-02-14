@@ -104,9 +104,10 @@ export default function Home() {
               <button
                 style={{
                   padding: '10px 20px',
-                  borderRadius: '5px',
+                  borderRadius: '8px',
+                  boxShadow: '0px 2px 8px rgba(0,0,0,0.2)',
                   color: '#00008B',
-                  backgroundColor: 'white',
+                  backgroundColor: '#fff',
                   border: '1px solid #00008B',
                   cursor: 'pointer'
                 }}
