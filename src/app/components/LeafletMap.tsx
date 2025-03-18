@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Configura le icone di default per Leaflet
+// Configurazione delle icone di default per Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
@@ -14,8 +14,12 @@ L.Icon.Default.mergeOptions({
 });
 
 interface LeafletMapProps {
-  location: string | null | undefined;
-  routeCoordinates: [number, number][];
+  location?: string | null;  
+  routeCoordinates?: [number, number][] | null;
+  mapPosition?: { top?: string; left?: string; right?: string; bottom?: string }; // Posizione del container della mappa
+  mapSize?: { width?: string; height?: string }; // Dimensioni della mappa (modificabili via codice)
+  mapBorderRadius?: string; // Bordo della mappa
+  draggable?: boolean;      // Abilita/disabilita il trascinamento della mappa
 }
 
 const RecenterAutomatically = ({ coords }: { coords: [number, number][] }) => {
@@ -28,16 +32,28 @@ const RecenterAutomatically = ({ coords }: { coords: [number, number][] }) => {
   return null;
 };
 
-const LeafletMap: React.FC<LeafletMapProps> = ({ location, routeCoordinates }) => {
-  // Se non ci sono coordinate, usa Roma come centro di default
-  const defaultCenter: [number, number] =
-    routeCoordinates && routeCoordinates.length > 0 ? routeCoordinates[0] : [41.9028, 12.4964];
+const LeafletMap: React.FC<LeafletMapProps> = ({
+  location,
+  routeCoordinates,
+  mapPosition = {},
+  mapSize = { width: '100%', height: '400px' },
+  mapBorderRadius = '0px',
+  draggable = true,
+}) => {
+  // Se routeCoordinates è null/undefined, lo imposta come array vuoto
+  const safeRouteCoordinates = routeCoordinates || [];
 
-  // Usa un id fisso per il contenitore della mappa
+  // Centro di default (Roma) se non sono disponibili coordinate
+  const defaultCenter: [number, number] =
+    safeRouteCoordinates.length > 0 ? safeRouteCoordinates[0] : [41.9028, 12.4964];
+
+  // Imposta un livello di zoom di base: 10 se più punti, 13 se solo uno
+  const zoomLevel = safeRouteCoordinates.length > 1 ? 10 : 13;
+
   const mapContainerId = 'mapContainer';
 
+  // Se il container era già inizializzato, resettiamo l'_leaflet_id per evitare conflitti
   useEffect(() => {
-    // Prima di montare la mappa, se il contenitore esiste ed è già inizializzato, "resetta" _leaflet_id
     const container = document.getElementById(mapContainerId);
     if (container && (container as any)._leaflet_id) {
       (container as any)._leaflet_id = null;
@@ -45,24 +61,42 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ location, routeCoordinates }) =
   }, [mapContainerId]);
 
   return (
-    <MapContainer
-      id={mapContainerId}
-      center={defaultCenter}
-      zoom={10}
-      style={{ width: '100%', height: '100%' }}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {routeCoordinates.map((coord, index) => (
-        <Marker key={index} position={coord} />
-      ))}
-      {routeCoordinates.length > 1 && (
-        <Polyline positions={routeCoordinates} color="blue" />
-      )}
-      <RecenterAutomatically coords={routeCoordinates} />
-    </MapContainer>
+    <div style={{ position: 'relative', ...mapPosition }}>
+      <MapContainer
+        id={mapContainerId}
+        center={defaultCenter}
+        zoom={zoomLevel}
+        scrollWheelZoom={true}
+        whenCreated={(mapInstance) => {
+          // Abilita il dragging se draggable è true
+          if (draggable) {
+            mapInstance.dragging.enable();
+          } else {
+            mapInstance.dragging.disable();
+          }
+        }}
+        style={{
+          width: mapSize.width,
+          height: mapSize.height,
+          borderRadius: mapBorderRadius,
+        }}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+
+        {safeRouteCoordinates.map((coord, index) => (
+          <Marker key={index} position={coord} />
+        ))}
+
+        {safeRouteCoordinates.length > 1 && (
+          <Polyline positions={safeRouteCoordinates} color="blue" />
+        )}
+
+        <RecenterAutomatically coords={safeRouteCoordinates} />
+      </MapContainer>
+    </div>
   );
 };
 
