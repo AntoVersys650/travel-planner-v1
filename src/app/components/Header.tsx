@@ -86,9 +86,16 @@ const languageOptions = [
     { label: 'FR', value: 'fr' },
 ];
 
-interface HeaderProps { }
+interface HeaderProps {
+    /**
+     * Altezza minima del container interno dell'header.
+     * Controlla lo spazio verticale della barra principale.
+     * Default: '90px'.
+     */
+     minHeight?: string;
+}
 
-const Header: React.FC<HeaderProps> = () => {
+const Header: React.FC<HeaderProps> = ({ minHeight = '90px' }) => {
     const [currentLanguage, setCurrentLanguage] = useState('it');
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [isCurrencyMenuOpen, setIsCurrencyMenuOpen] = useState(false);
@@ -115,6 +122,13 @@ const Header: React.FC<HeaderProps> = () => {
         return () => window.removeEventListener('languageChange', handleLanguageChangeEvent);
     }, []);
 
+     // Carica la valuta salvata in localStorage
+    useEffect(() => {
+        const storedCurrency = localStorage.getItem('selectedCurrency') || 'eur';
+        setSelectedCurrency(storedCurrency);
+    }, []);
+
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
@@ -137,10 +151,16 @@ const Header: React.FC<HeaderProps> = () => {
     const toggleProfileMenu = () => setIsProfileMenuOpen((prev) => !prev);
     const toggleCurrencyMenu = () => setIsCurrencyMenuOpen((prev) => !prev);
     const toggleLanguageMenu = () => setIsLanguageMenuOpen((prev) => !prev);
+
     const selectCurrency = (value: string) => {
         setSelectedCurrency(value);
+        localStorage.setItem('selectedCurrency', value); // Salva la valuta selezionata
         setIsCurrencyMenuOpen(false);
+         // Dispatch di un evento personalizzato per notificare altri componenti (come SearchBarHomePage)
+        const currencyChangeEvent = new CustomEvent('currencyChange', { detail: value });
+        window.dispatchEvent(currencyChangeEvent);
     };
+
 
     const selectLanguage = (value: string) => {
         setCurrentLanguage(value);
@@ -168,9 +188,12 @@ const Header: React.FC<HeaderProps> = () => {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute right-0 top-12 bg-blue-900 border border-blue-800 shadow-lg rounded-md p-4 space-y-4 w-64"
+                        // Stili per il menu mobile migliorati
+                        className="absolute right-0 top-12 bg-white border border-gray-200 shadow-lg rounded-lg p-4 space-y-4 w-64 text-gray-800"
                     >
                         <div className="space-y-2">
+                             {/* Commentato href per puntare alla pagina interna /flights */}
+                             {/*
                             <Link href="/flights" className="block px-4 py-2 rounded-md hover:bg-blue-800">
                                 <span className="text-white">{langTranslations.flights}</span>
                             </Link>
@@ -180,16 +203,17 @@ const Header: React.FC<HeaderProps> = () => {
                             <Link href="/rentals" className="block px-4 py-2 rounded-md hover:bg-blue-800">
                                 <span className="text-white">{langTranslations.rentals}</span>
                             </Link>
-                            <Link href="/" className="block px-4 py-2 rounded-md hover:bg-blue-800">
-                                <span className="text-white">{langTranslations.home}</span>
+                             */}
+                            <Link href="/" className="block px-4 py-2 rounded-md hover:bg-gray-100" onClick={() => setIsMobileMenuOpen(false)}>
+                                <span className="text-gray-800">{langTranslations.home}</span>
                             </Link>
                         </div>
-                        <div className="border-t border-blue-800 pt-4">
+                        <div className="border-t border-gray-200 pt-4">
                             {/* Profilo Mobile */}
                             <div className="relative">
                                 <button
                                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                                    className="text-white w-full flex items-center justify-between py-2 px-4 rounded-md hover:bg-blue-800"
+                                    className="text-gray-800 w-full flex items-center justify-between py-2 px-4 rounded-md hover:bg-gray-100"
                                 >
                                     {langTranslations.profile}
                                     <ChevronDown className="h-4 w-4" />
@@ -201,10 +225,10 @@ const Header: React.FC<HeaderProps> = () => {
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}
                                             transition={{ duration: 0.2 }}
-                                            className="absolute left-0 mt-2 bg-blue-900 border border-blue-800 shadow-lg rounded-md p-2 w-full"
+                                            className="absolute left-0 mt-2 bg-white border border-gray-200 shadow-lg rounded-md p-2 w-full"
                                         >
                                             {profileMenuOptions[currentLanguage]?.map((option, index) => (
-                                                <Link href={option.href} key={index} className="block py-1 px-2 text-white hover:bg-blue-800 rounded-md">
+                                                <Link href={option.href} key={index} className="block py-1 px-2 text-gray-800 hover:bg-gray-100 rounded-md" onClick={() => setIsMobileMenuOpen(false)}>
                                                     {option.label}
                                                 </Link>
                                             ))}
@@ -217,7 +241,7 @@ const Header: React.FC<HeaderProps> = () => {
                             <div className="relative mt-2">
                                 <button
                                     onClick={() => setIsCurrencyMenuOpen(!isCurrencyMenuOpen)}
-                                    className="text-white w-full flex items-center justify-between py-2 px-4 rounded-md hover:bg-blue-800"
+                                    className="text-gray-800 w-full flex items-center justify-between py-2 px-4 rounded-md hover:bg-gray-100"
                                 >
                                     Valuta ({currencyOptions.find((c) => c.value === selectedCurrency)?.label})
                                     <ChevronDown className="h-4 w-4" />
@@ -229,7 +253,7 @@ const Header: React.FC<HeaderProps> = () => {
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}
                                             transition={{ duration: 0.2 }}
-                                            className="absolute left-0 mt-2 bg-blue-900 border border-blue-800 shadow-lg rounded-md w-full"
+                                            className="absolute left-0 mt-2 bg-white border border-gray-200 shadow-lg rounded-md w-full"
                                         >
                                             {currencyOptions.map((option, index) => (
                                                 <div
@@ -238,7 +262,7 @@ const Header: React.FC<HeaderProps> = () => {
                                                         selectCurrency(option.value);
                                                         setIsMobileMenuOpen(false);
                                                     }}
-                                                    className="py-2 px-4 text-white hover:bg-blue-800 rounded-md cursor-pointer"
+                                                    className="py-2 px-4 text-gray-800 hover:bg-gray-100 rounded-md cursor-pointer"
                                                 >
                                                     {option.label}
                                                 </div>
@@ -251,7 +275,7 @@ const Header: React.FC<HeaderProps> = () => {
                             <div className="relative mt-2">
                                 <button
                                     onClick={() => setIsLanguageMenuOpen(!isLanguageMenuOpen)}
-                                    className="text-white w-full flex items-center justify-between py-2 px-4 rounded-md hover:bg-blue-800"
+                                    className="text-gray-800 w-full flex items-center justify-between py-2 px-4 rounded-md hover:bg-gray-100"
                                 >
                                     Lingua ({languageOptions.find((l) => l.value === currentLanguage)?.label})
                                     <ChevronDown className="h-4 w-4" />
@@ -263,16 +287,15 @@ const Header: React.FC<HeaderProps> = () => {
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}
                                             transition={{ duration: 0.2 }}
-                                            className="absolute left-0 mt-2 bg-blue-900 border border-blue-800 shadow-lg rounded-md w-full"
+                                             // Stili moderni per il dropdown
+                                            className="absolute left-0 mt-2 bg-white border border-gray-200 shadow-lg rounded-md w-full"
                                         >
                                             {languageOptions.map((option, index) => (
                                                 <div
                                                     key={index}
-                                                    onClick={() => {
-                                                        selectLanguage(option.value);
-                                                        setIsMobileMenuOpen(false);
-                                                    }}
-                                                    className="py-2 px-4 text-white hover:bg-blue-800 rounded-md cursor-pointer"
+                                                    onClick={() => selectLanguage(option.value)}
+                                                    // Stili moderni per le voci del dropdown
+                                                    className="py-2 px-4 text-gray-800 hover:bg-gray-100 rounded-md cursor-pointer"
 
                                                 >
                                                     {option.label}
@@ -294,8 +317,10 @@ const Header: React.FC<HeaderProps> = () => {
         <header
             className="fixed top-0 left-0 right-0 bg-blue-900 z-50 shadow-md"
         >
-            <div className="container mx-auto px-4 py-4 flex  items-center justify-between" style={{ minHeight: '120px' }}>
+            {/* Utilizza la prop minHeight per impostare l'altezza minima del container interno */}
+            <div className="container mx-auto px-4 py-4 flex items-center justify-between" style={{ minHeight: minHeight }}>
                 {/* Logo */}
+                {/* Il posizionamento assoluto e i margini lo mantengono allineato */}
                 <div className=" absolute top-0 left-0 m-4 flex flex-col" style={{zIndex: 100}}>
                     <Link href="/" aria-label="Vai alla pagina iniziale">
                         <Image
@@ -307,8 +332,10 @@ const Header: React.FC<HeaderProps> = () => {
                         />
                     </Link>
 
-                    {/* Navigazione a sinistra (desktop) */}
+                    {/* Navigazione a sinistra (desktop) - Commentata */}
                     <nav className="flex  gap-4 mt-6">
+                        {/* Commentati i link/pulsanti per Cerca Voli, Cerca Alloggi, Cerca Noleggi */}
+                        {/*
                         <Link href="/flights" className="text-white hover:text-blue-300" aria-label="Vai alla pagina dei voli">
                             <button className="text-white hover:text-blue-300 font-bold  rounded" >{langTranslations.flights}</button>
                         </Link>
@@ -318,20 +345,96 @@ const Header: React.FC<HeaderProps> = () => {
                         <Link href="/rentals" className="text-white hover:text-blue-300" aria-label="Vai alla pagina degli affitti">
                             <button className="text-white hover:text-blue-300 font-bold  rounded">{langTranslations.rentals}</button>
                         </Link>
+                         */}
                     </nav>
                 </div>
 
 
 
-                {/* Menu a destra (desktop) */}
+                {/* Menu a destra (desktop) - Riordinato Valuta, Lingua, Profilo e stili aggiornati */}
+                 {/* Il posizionamento assoluto e i margini lo mantengono allineato */}
                 <div className="flex items-center gap-4 m-4 absolute top-0 right-0" style={{zIndex: 100}}>
-                    {/* Profilo */}
+
+                    {/* Valuta - Primo */}
+                    <div ref={currencyRef} className="relative">
+                        <button
+                            onClick={toggleCurrencyMenu}
+                            className="text-white flex items-center gap-2 focus:outline-none"
+                            aria-label="Apri menu valuta"
+                        >
+                            {currencyOptions.find((c) => c.value === selectedCurrency)?.label}
+                            <ChevronDown className="h-4 w-4" />
+                        </button>
+                        <AnimatePresence>
+                            {isCurrencyMenuOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                    // Stili moderni per il dropdown
+                                    className="absolute right-0 mt-2 bg-white border border-gray-200 shadow-lg rounded-lg p-2 w-48 text-gray-800"
+                                >
+                                    {currencyOptions.map((option, index) => (
+                                        <div
+                                            key={index}
+                                            onClick={() => selectCurrency(option.value)}
+                                            // Stili moderni per le voci del dropdown
+                                            className="py-2 px-4 text-gray-800 hover:bg-gray-100 rounded-md cursor-pointer"
+                                            role="menuitem"
+                                        >
+                                            {option.label}
+                                        </div>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                     {/* Lingua - Secondo */}
+                     <div ref={languageRef} className="relative">
+                        <button
+                            onClick={toggleLanguageMenu}
+                            className="text-white  flex items-center gap-2 focus:outline-none"
+                            aria-label="Apri menu lingua"
+                        >
+                            {languageOptions.find((l) => l.value === currentLanguage)?.label}
+                            <ChevronDown className="h-4 w-4" />
+                        </button>
+                        <AnimatePresence>
+                            {isLanguageMenuOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                     // Stili moderni per il dropdown
+                                    className="absolute right-0 mt-2 bg-white border border-gray-200 shadow-lg rounded-lg p-2 w-48 text-gray-800"
+                                >
+                                    {languageOptions.map((option, index) => (
+                                        <div
+                                            key={index}
+                                            onClick={() => selectLanguage(option.value)}
+                                            // Stili moderni per le voci del dropdown
+                                            className="py-2 px-4 text-gray-800 hover:bg-gray-100 rounded-md cursor-pointer"
+
+                                        >
+                                            {option.label}
+                                        </div>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Profilo - Ultimo */}
                     <div ref={profileRef} className="">
                         <button
                             onClick={toggleProfileMenu}
-                            className="text-white focus:outline-none"
+                            className="text-white focus:outline-none flex items-center"
                             aria-label="Apri menu profilo"
                         >
+                             {/* L'immagine ha già le dimensioni fisse */}
                             <Image
                                 src="/logo/profile.png"
                                 alt="Profile"
@@ -346,13 +449,15 @@ const Header: React.FC<HeaderProps> = () => {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
                                     transition={{ duration: 0.2 }}
-                                    className="absolute right-0 mt-2 bg-blue-900 border border-blue-800 shadow-lg rounded-md p-2 w-48"
+                                     // Stili moderni per il dropdown
+                                    className="absolute right-0 mt-2 bg-white border border-gray-200 shadow-lg rounded-lg p-2 w-48 text-gray-800"
                                 >
                                     {profileMenuOptions[currentLanguage]?.map((option, index) => (
                                         <Link
                                             href={option.href}
                                             key={index}
-                                            className="block py-1 px-2 text-white hover:bg-blue-800 rounded-md"
+                                            // Stili moderni per le voci del dropdown
+                                            className="block py-1 px-2 text-gray-800 hover:bg-gray-100 rounded-md"
                                             aria-label={option.label}
                                         >
                                             {option.label}
@@ -362,76 +467,7 @@ const Header: React.FC<HeaderProps> = () => {
                             )}
                         </AnimatePresence>
                     </div>
-                    {/* Lingua */}
-                    <div ref={languageRef} className="relative">
-                        <button
-                            onClick={toggleLanguageMenu}
-                            className="text-white  flex items-center gap-2 focus:outline-none"
-                            style={{height: '170px', display: 'flex', alignItems: 'center'}}
-                            aria-label="Apri menu lingua"
-                        >
-                            {languageOptions.find((l) => l.value === currentLanguage)?.label}
-                            <ChevronDown className="h-4 w-4" />
-                        </button>
-                        <AnimatePresence>
-                            {isLanguageMenuOpen && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="absolute right-0 mt-2 bg-blue-900 border border-blue-800 shadow-lg rounded-md w-48"
-                                >
-                                    {languageOptions.map((option, index) => (
-                                        <div
-                                            key={index}
-                                            onClick={() => selectLanguage(option.value)}
-                                            className="py-2 px-4 text-white hover:bg-blue-800 rounded-md cursor-pointer"
-                                            role="menuitem"
-                                        >
-                                            {option.label}
-                                        </div>
-                                    ))}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
 
-                    {/* Valuta */}
-                    <div ref={currencyRef} className="relative">
-                        <button
-                            onClick={toggleCurrencyMenu}
-                            className="text-white flex items-center gap-2 focus:outline-none"
-                            style={{height: '40px', display: 'flex', alignItems: 'center'}}
-                            aria-label="Apri menu valuta"
-                        >
-                            {currencyOptions.find((c) => c.value === selectedCurrency)?.label}
-                            <ChevronDown className="h-4 w-4" />
-                        </button>
-                        <AnimatePresence>
-                            {isCurrencyMenuOpen && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="absolute right-0 mt-2 bg-blue-900 border border-blue-800 shadow-lg rounded-md w-48"
-                                >
-                                    {currencyOptions.map((option, index) => (
-                                        <div
-                                            key={index}
-                                            onClick={() => selectCurrency(option.value)}
-                                            className="py-2 px-4 text-white hover:bg-blue-800 rounded-md cursor-pointer"
-                                            role="menuitem"
-
-                                        >
-                                            {option.label}
-                                        </div>
-                                    ))}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
                 </div>
 
                 {/* Menu Mobile Button */}
@@ -442,4 +478,3 @@ const Header: React.FC<HeaderProps> = () => {
 };
 
 export default Header;
-
