@@ -184,7 +184,7 @@ const Popover: React.FC<PopoverProps> = ({
                             ref={contentRef}
                             style={{
                                 position: 'fixed',
-                                zIndex: 1000,
+                                zIndex: 2000, // Increased z-index to be on top
                             }}
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
